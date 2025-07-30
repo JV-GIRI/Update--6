@@ -1,0 +1,11 @@
+streamlit
+streamlit-webrtc
+numpy
+matplotlib
+scipy
+pydub
+soundfile
+sounddevice
+librosa
+pandas
+twilio
