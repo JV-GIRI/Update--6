@@ -10,3 +10,4 @@ tensorflow
 scikit-learn
 twilio
 requests
+librosa
