@@ -124,7 +124,13 @@ if ctx.audio_receiver:
             st.audio(file_path, format="audio/wav")
             plot_waveform(denoised, sr, title=f"{valve} Valve Waveform")
 
-if st.button("Save Patient Record"):
+if st.button("\U0001F49B Analyse"):
+    if patient_name and height and weight and "saved_files" in st.session_state:
+        st.success("Analysis complete. You can now save the case.")
+    else:
+        st.warning("Fill all patient details and record at least one valve sound.")
+
+if st.button("Save Case"):
     if patient_name and height and weight and "saved_files" in st.session_state:
         save_case(patient_name, height, weight, st.session_state.saved_files)
         st.success("Case saved to history.")
