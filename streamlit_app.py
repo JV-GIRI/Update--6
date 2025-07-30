@@ -13,7 +13,7 @@ import io
 from twilio.rest import Client
 
 st.set_page_config(layout="wide")
-st.title("💓 HEARTEST : GIRI's PCG analyzer")
+st.title("💓 HEARTEST : Giri's PCG analyzer")
 
 UPLOAD_FOLDER = "uploaded_audios"
 EDITED_FOLDER = "edited_audios"
@@ -77,7 +77,7 @@ def show_waveform(audio, sr, label, color='blue'):
     st.pyplot(fig)
 
 
-def edit_and_show_waveform(path, label, save_edit=False):
+def edit_and_show_waveform(path, label, save_edit=False, key_suffix=""):
     sr, audio = wav.read(path)
     if audio.ndim > 1:
         audio = audio[:, 0]
@@ -86,11 +86,11 @@ def edit_and_show_waveform(path, label, save_edit=False):
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        amplitude_factor = st.slider(f"{label} Amplitude", 0.1, 5.0, 1.0, key=f"amp_slider_{label}")
+        amplitude_factor = st.slider(f"{label} Amplitude", 0.1, 5.0, 1.0, key=f"amp_slider_{label}_{key_suffix}")
     with col2:
-        duration_slider = st.slider(f"{label} Duration (s)", 1, int(len(audio) / sr), 5, key=f"dur_slider_{label}")
+        duration_slider = st.slider(f"{label} Duration (s)", 1, int(len(audio) / sr), 5, key=f"dur_slider_{label}_{key_suffix}")
     with col3:
-        noise_cutoff = st.slider(f"{label} Noise Cutoff", 0.01, 0.5, 0.05, step=0.01, key=f"noise_slider_{label}")
+        noise_cutoff = st.slider(f"{label} Noise Cutoff", 0.01, 0.5, 0.05, step=0.01, key=f"noise_slider_{label}_{key_suffix}")
 
     adjusted_audio = audio[:duration_slider * sr] * amplitude_factor
     filtered_audio = reduce_noise(adjusted_audio, sr, cutoff=noise_cutoff)
@@ -129,7 +129,7 @@ for i, label in enumerate(valve_labels):
 if "patient_saved" not in st.session_state:
     st.session_state["patient_saved"] = False
 
-with st.sidebar.expander("🖞️ Add Patient Info"):
+with st.sidebar.expander("🗾️ Add Patient Info"):
     name = st.text_input("Name")
     age = st.number_input("Age", 1, 120)
     height = st.number_input("Height (cm)", min_value=50.0, max_value=250.0)
@@ -140,13 +140,13 @@ with st.sidebar.expander("🖞️ Add Patient Info"):
 
 if height and weight:
     bmi = round(weight / ((height / 100) ** 2), 2)
-    st.markdown(f"**BMI:** {bmi}")
+    st.markdown(f"BMI: {bmi}")
 
 if st.button("📂 Save Patient Case", type="primary"):
     if len(valve_paths) == 4:
         edited_files = []
         for label in valve_labels:
-            edited_path = edit_and_show_waveform(valve_paths[label], label, save_edit=True)
+            edited_path = edit_and_show_waveform(valve_paths[label], label, save_edit=True, key_suffix="save")
             edited_files.append(os.path.basename(edited_path))
 
         data = {
@@ -168,7 +168,7 @@ if st.session_state["patient_saved"]:
     st.subheader("🔹 Original & Edited Waveforms")
     for label in valve_labels:
         if label in valve_paths:
-            edit_and_show_waveform(valve_paths[label], label)
+            edit_and_show_waveform(valve_paths[label], label, key_suffix="view")
 
 if st.button("📤 Send Case via SMS"):
     if len(valve_paths) == 4 and phone:
@@ -214,4 +214,4 @@ div.stButton > button:first-child {
     color: white;
 }
 </style>""", unsafe_allow_html=True)
-    
+                         
