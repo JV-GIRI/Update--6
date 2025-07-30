@@ -13,11 +13,13 @@ import io
 from twilio.rest import Client
 
 st.set_page_config(layout="wide")
-st.title("💓 HEARTEST : Giri's PCG analyzer")
+st.title("💓 HEARTEST : GIRI's PCG analyzer")
 
 UPLOAD_FOLDER = "uploaded_audios"
+EDITED_FOLDER = "edited_audios"
 PATIENT_DATA = "patient_data.json"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(EDITED_FOLDER, exist_ok=True)
 
 
 def save_patient_data(data):
@@ -61,6 +63,10 @@ def wav_to_bytes(audio_data, sample_rate):
     return output.getvalue()
 
 
+def save_wav(path, audio_data, sample_rate):
+    wav.write(path, sample_rate, audio_data.astype(np.int16))
+
+
 def show_waveform(audio, sr, label, color='blue'):
     times = np.linspace(0, len(audio)/sr, num=len(audio))
     fig, ax = plt.subplots()
@@ -71,7 +77,7 @@ def show_waveform(audio, sr, label, color='blue'):
     st.pyplot(fig)
 
 
-def edit_and_show_waveform(path, label):
+def edit_and_show_waveform(path, label, save_edit=False):
     sr, audio = wav.read(path)
     if audio.ndim > 1:
         audio = audio[:, 0]
@@ -89,6 +95,10 @@ def edit_and_show_waveform(path, label):
     adjusted_audio = audio[:duration_slider * sr] * amplitude_factor
     filtered_audio = reduce_noise(adjusted_audio, sr, cutoff=noise_cutoff)
 
+    edited_path = os.path.join(EDITED_FOLDER, os.path.basename(path))
+    if save_edit:
+        save_wav(edited_path, filtered_audio, sr)
+
     col1, col2 = st.columns(2)
     with col1:
         st.write(f"**{label} Original**")
@@ -98,6 +108,8 @@ def edit_and_show_waveform(path, label):
         st.write(f"**{label} Edited**")
         st.audio(io.BytesIO(wav_to_bytes(filtered_audio, sr)), format='audio/wav')
         show_waveform(filtered_audio, sr, f"{label} (Edited)", color='red')
+
+    return edited_path
 
 
 st.subheader("🎧 Upload Heart Valve Sounds")
@@ -117,14 +129,14 @@ for i, label in enumerate(valve_labels):
 if "patient_saved" not in st.session_state:
     st.session_state["patient_saved"] = False
 
-with st.sidebar.expander("🗞️ Add Patient Info"):
+with st.sidebar.expander("🖞️ Add Patient Info"):
     name = st.text_input("Name")
     age = st.number_input("Age", 1, 120)
     height = st.number_input("Height (cm)", min_value=50.0, max_value=250.0)
     weight = st.number_input("Weight (kg)", min_value=2.0, max_value=300.0)
     gender = st.radio("Gender", ["Male", "Female", "Other"])
     notes = st.text_area("Clinical Notes")
-    phone = st.text_input("📾 Patient Phone (E.g. +15558675309)")
+    phone = st.text_input("📲 Patient Phone (E.g. +15558675309)")
 
 if height and weight:
     bmi = round(weight / ((height / 100) ** 2), 2)
@@ -132,6 +144,11 @@ if height and weight:
 
 if st.button("📂 Save Patient Case", type="primary"):
     if len(valve_paths) == 4:
+        edited_files = []
+        for label in valve_labels:
+            edited_path = edit_and_show_waveform(valve_paths[label], label, save_edit=True)
+            edited_files.append(os.path.basename(edited_path))
+
         data = {
             "name": name,
             "age": age,
@@ -140,7 +157,7 @@ if st.button("📂 Save Patient Case", type="primary"):
             "height": height,
             "weight": weight,
             "bmi": bmi,
-            "file": ", ".join([os.path.basename(valve_paths[k]) for k in valve_labels]),
+            "file": ", ".join(edited_files),
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         save_patient_data(data)
@@ -179,11 +196,11 @@ if patient_data:
             st.write(f"BMI: {entry.get('bmi', 'N/A')}")
             st.write(f"Notes: {entry['notes']}")
             for label in valve_labels:
-                filename = entry['file'].split(', ')[0]
-                audio_file = os.path.join(UPLOAD_FOLDER, f"{label}_{filename}")
-                if os.path.exists(audio_file):
-                    st.audio(audio_file, format="audio/wav")
-                    sr, audio = wav.read(audio_file)
+                filename = f"{label}_{entry['file'].split(', ')[0].split('_', 1)[1]}"
+                edited_file = os.path.join(EDITED_FOLDER, filename)
+                if os.path.exists(edited_file):
+                    st.audio(edited_file, format="audio/wav")
+                    sr, audio = wav.read(edited_file)
                     if audio.ndim > 1:
                         audio = audio[:, 0]
                     show_waveform(audio, sr, f"{label} History")
@@ -197,3 +214,4 @@ div.stButton > button:first-child {
     color: white;
 }
 </style>""", unsafe_allow_html=True)
+    
