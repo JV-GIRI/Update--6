@@ -1,23 +1,12 @@
-# Core dependencies
 streamlit
 streamlit-webrtc
-
-# Audio processing
 numpy
 pydub
 soundfile
 scipy
+opencv-python
 matplotlib
-
-# Machine Learning / Denoising (choose based on your model)
 tensorflow
 scikit-learn
-
-# Image/Video processing
-opencv-python
-
-# Messaging (Twilio)
 twilio
-
-# Additional utils
 requests
