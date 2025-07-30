@@ -11,3 +11,6 @@ scikit-learn
 twilio
 requests
 librosa
+webrtc_streamer
+WebRtcMode
+ClientSettings
